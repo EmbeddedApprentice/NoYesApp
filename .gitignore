@@ -108,6 +108,9 @@ node_modules/
 *.swo
 *~
 
+# Reference repo (not part of this project)
+claude-code-django/
+
 # OS
 .DS_Store
 Thumbs.db
