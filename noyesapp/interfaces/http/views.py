@@ -121,7 +121,7 @@ def start_questionnaire_view(
             request,
             "player/error.html",
             {
-                "message": "This questionnaire has no start node.",
+                "message": "This questionnaire has no starting step.",
             },
         )
 
@@ -226,14 +226,6 @@ def answer_node_view(
 
     record_answer_and_advance(session, node, answer_type, destination)
 
-    # If destination is terminal, mark complete and redirect to completion page
-    if destination.node_type == Node.NodeType.TERMINAL:  # pyright: ignore[reportUnknownMemberType]
-        complete_session(session)
-        return redirect(
-            "complete_questionnaire",
-            questionnaire_slug=questionnaire_slug,
-        )
-
     dest_slug: str = destination.slug  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
     return redirect(
         "play_node",
@@ -245,26 +237,47 @@ def answer_node_view(
 def complete_questionnaire_view(
     request: HttpRequest, questionnaire_slug: str
 ) -> HttpResponse:
-    """Show the completion page for a questionnaire."""
+    """Complete and show the completion page for a questionnaire."""
     questionnaire = get_questionnaire_by_slug(questionnaire_slug)
 
-    # Try to find the completed session to show the path
     user = request.user if request.user.is_authenticated else None
     session_key = request.session.session_key or ""
 
-    filters: dict[str, object] = {
+    from noyesapp.data.models import QuestionnaireSession
+
+    # On POST, complete the active session
+    if request.method == "POST":
+        active_filters: dict[str, object] = {
+            "questionnaire": questionnaire,
+            "is_complete": False,
+        }
+        if user is not None:
+            active_filters["user"] = user
+        else:
+            active_filters["session_key"] = session_key
+
+        active_session = (
+            QuestionnaireSession.objects.filter(**active_filters)
+            .order_by("-started_at")
+            .first()
+        )
+        if active_session is not None:
+            complete_session(active_session)
+
+    # Find the completed session to show the path
+    completed_filters: dict[str, object] = {
         "questionnaire": questionnaire,
         "is_complete": True,
     }
     if user is not None:
-        filters["user"] = user
+        completed_filters["user"] = user
     else:
-        filters["session_key"] = session_key
-
-    from noyesapp.data.models import QuestionnaireSession
+        completed_filters["session_key"] = session_key
 
     session = (
-        QuestionnaireSession.objects.filter(**filters).order_by("-completed_at").first()
+        QuestionnaireSession.objects.filter(**completed_filters)
+        .order_by("-completed_at")
+        .first()
     )
 
     responses: object = get_session_responses(session) if session else []

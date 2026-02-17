@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}Edit Node — {{ questionnaire.title }} — NoYesApp{% endblock %}
+{% block title %}Edit Step — {{ questionnaire.title }} — NoYesApp{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-10">
-        <h2 class="mb-4">Edit Node: {{ node.slug }}</h2>
+        <h2 class="mb-4">Edit Step: {{ node.slug }}</h2>
         <p class="text-muted">In: {{ questionnaire.title }}</p>
 
         {% if is_start_node %}
         <div class="alert alert-info" role="alert">
-            This is the <strong>start node</strong> of the questionnaire.
+            This is the <strong>starting step</strong> of the questionnaire.
         </div>
         {% endif %}
 
         <div class="card mb-4">
-            <div class="card-header">Node Details</div>
+            <div class="card-header">Step Details</div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
@@ -27,7 +27,7 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header">Outgoing Edges</div>
+            <div class="card-header">Answers</div>
             <div class="card-body">
                 {% if outgoing_edges %}
                 <div class="list-group mb-3">
@@ -47,10 +47,10 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-muted mb-3">No outgoing edges.</p>
+                <p class="text-muted mb-3">No answers yet.</p>
                 {% endif %}
 
-                <h6>Add Edge</h6>
+                <h6>Add Answer</h6>
                 <form method="post"
                       action="{% url 'add_edge' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
                       class="row g-2 align-items-end">
@@ -74,7 +74,7 @@
             <a href="{% url 'edit_questionnaire' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
                class="btn btn-outline-secondary">Back to Questionnaire</a>
             <a href="{% url 'delete_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
-               class="btn btn-outline-danger">Delete Node</a>
+               class="btn btn-outline-danger">Delete Step</a>
         </div>
     </div>
 </div>

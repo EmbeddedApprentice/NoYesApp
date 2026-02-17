@@ -54,9 +54,9 @@
 
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Nodes</span>
+                <span>Steps</span>
                 <a href="{% url 'add_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
-                   class="btn btn-primary btn-sm">Add Node</a>
+                   class="btn btn-primary btn-sm">Add Step</a>
             </div>
             <div class="card-body">
                 {% if nodes %}
@@ -89,7 +89,7 @@
                                       class="d-inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-info btn-sm"
-                                            title="Set as start node">Start</button>
+                                            title="Set as starting step">Start</button>
                                 </form>
                                 {% endif %}
                                 <a href="{% url 'edit_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
@@ -101,7 +101,7 @@
                 </div>
                 {% else %}
                 <p class="text-muted text-center py-3 mb-0">
-                    No nodes yet. Add your first node to get started.
+                    No steps yet. Add your first step to get started.
                 </p>
                 {% endif %}
             </div>

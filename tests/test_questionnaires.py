@@ -296,7 +296,7 @@ class TestValidation:
         q = QuestionnaireFactory()
         NodeFactory(questionnaire=q, node_type=Node.NodeType.TERMINAL)
         errors = validate_questionnaire_graph(q)
-        assert any("start node" in e for e in errors)
+        assert any("starting step" in e for e in errors)
 
     def test_question_missing_edges(self) -> None:
         q = QuestionnaireFactory()
@@ -321,7 +321,7 @@ class TestValidation:
         dest = NodeFactory(questionnaire=q, node_type=Node.NodeType.TERMINAL)
         EdgeFactory(source=terminal, destination=dest, answer_type=Edge.AnswerType.NEXT)
         errors = validate_node_edges(terminal)
-        assert any("no outgoing edges" in e for e in errors)
+        assert any("no outgoing answers" in e for e in errors)
 
 
 class TestPublish:

@@ -27,11 +27,6 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item ms-2">
-                        <a class="btn btn-outline-light btn-sm" href="{% url 'about' %}">About</a>
-                    </li>
-                </ul>
                 <ul class="navbar-nav ms-auto align-items-center">
                     {% if user.is_authenticated %}
                     <li class="nav-item">

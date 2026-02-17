@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Delete Node — {{ questionnaire.title }} — NoYesApp{% endblock %}
+{% block title %}Delete Step — {{ questionnaire.title }} — NoYesApp{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <h2 class="mb-4">Delete Node</h2>
+        <h2 class="mb-4">Delete Step</h2>
 
         <div class="alert alert-danger" role="alert">
-            <strong>Are you sure?</strong> This will permanently delete the node
-            <strong>{{ node.slug }}</strong> and all its edges.
+            <strong>Are you sure?</strong> This will permanently delete the step
+            <strong>{{ node.slug }}</strong> and all its answers.
         </div>
 
         <div class="card mb-3">
@@ -21,7 +21,7 @@
 
         <form method="post">
             {% csrf_token %}
-            <button type="submit" class="btn btn-danger">Delete Node</button>
+            <button type="submit" class="btn btn-danger">Delete Step</button>
             <a href="{% url 'edit_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
                class="btn btn-outline-secondary">Cancel</a>
         </form>

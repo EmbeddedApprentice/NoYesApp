@@ -309,7 +309,7 @@ class TestStartQuestionnaireView:
             reverse("start_questionnaire", kwargs={"questionnaire_slug": "no-start"})
         )
         assert response.status_code == 200
-        assert b"no start node" in response.content
+        assert b"no starting step" in response.content
 
     def test_creates_session_for_authenticated_user(self, client: Client) -> None:
         data = _build_published_questionnaire(slug="auth-quiz")
@@ -356,7 +356,7 @@ class TestPlayNodeView:
         )
         assert response.status_code == 200
         assert b"Correct!" in response.content
-        assert b"View Results" in response.content
+        assert b"Done" in response.content
 
     def test_404_for_nonexistent_node(self, client: Client) -> None:
         _build_published_questionnaire(slug="miss-quiz")
@@ -405,9 +405,9 @@ class TestAnswerNodeView:
             ),
             {"answer_type": "yes"},
         )
-        # Terminal should redirect to complete page
+        # Terminal should redirect to the terminal node page
         assert response.status_code == 302
-        assert "/ans-quiz/complete/" in response.url  # type: ignore[union-attr]
+        assert "/ans-quiz/yes-end/" in response.url  # type: ignore[union-attr]
 
     def test_answer_no_redirects_to_terminal(self, client: Client) -> None:
         _build_published_questionnaire(slug="no-quiz")
@@ -419,7 +419,7 @@ class TestAnswerNodeView:
             {"answer_type": "no"},
         )
         assert response.status_code == 302
-        assert "/no-quiz/complete/" in response.url  # type: ignore[union-attr]
+        assert "/no-quiz/no-end/" in response.url  # type: ignore[union-attr]
 
     def test_answer_next_on_statement(self, client: Client) -> None:
         _build_multi_step_questionnaire(slug="next-quiz")
@@ -452,7 +452,7 @@ class TestAnswerNodeView:
         client.get(
             reverse("start_questionnaire", kwargs={"questionnaire_slug": "rec-quiz"})
         )
-        # Answer the question
+        # Answer the question (redirects to terminal node, not yet complete)
         client.post(
             reverse(
                 "answer_node",
@@ -463,9 +463,18 @@ class TestAnswerNodeView:
         session = QuestionnaireSession.objects.get(
             questionnaire=data["questionnaire"], user=user
         )
-        assert session.is_complete is True
+        assert session.is_complete is False
         responses = NodeResponse.objects.filter(session=session)
         assert responses.count() == 2  # start node + yes_end
+        # Complete via Done button on terminal node
+        client.post(
+            reverse(
+                "complete_questionnaire",
+                kwargs={"questionnaire_slug": "rec-quiz"},
+            )
+        )
+        session.refresh_from_db()
+        assert session.is_complete is True
 
     def test_invalid_answer_type_returns_404(self, client: Client) -> None:
         _build_published_questionnaire(slug="inv-quiz")
@@ -495,7 +504,8 @@ class TestCompleteQuestionnaireView:
             ),
             {"answer_type": "yes"},
         )
-        response = client.get(
+        # POST to complete the session (Done button on terminal node)
+        response = client.post(
             reverse(
                 "complete_questionnaire",
                 kwargs={"questionnaire_slug": "done-quiz"},
@@ -519,7 +529,8 @@ class TestCompleteQuestionnaireView:
             ),
             {"answer_type": "yes"},
         )
-        response = client.get(
+        # POST to complete the session (Done button on terminal node)
+        response = client.post(
             reverse(
                 "complete_questionnaire",
                 kwargs={"questionnaire_slug": "path-quiz"},

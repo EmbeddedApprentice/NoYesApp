@@ -108,22 +108,22 @@ def validate_node_edges(node: Node) -> list[str]:
     if node.node_type == Node.NodeType.QUESTION:  # pyright: ignore[reportUnknownMemberType]
         if len(outgoing) != 2:
             errors.append(
-                f"Question node '{node.slug}' must have exactly 2 edges (YES and NO)."  # pyright: ignore[reportUnknownMemberType]
+                f"Question '{node.slug}' must have exactly 2 answers (YES and NO)."  # pyright: ignore[reportUnknownMemberType]
             )
         if Edge.AnswerType.YES not in edge_types:
-            errors.append(f"Question node '{node.slug}' is missing a YES edge.")  # pyright: ignore[reportUnknownMemberType]
+            errors.append(f"Question '{node.slug}' is missing a YES answer.")  # pyright: ignore[reportUnknownMemberType]
         if Edge.AnswerType.NO not in edge_types:
-            errors.append(f"Question node '{node.slug}' is missing a NO edge.")  # pyright: ignore[reportUnknownMemberType]
+            errors.append(f"Question '{node.slug}' is missing a NO answer.")  # pyright: ignore[reportUnknownMemberType]
     elif node.node_type == Node.NodeType.STATEMENT:  # pyright: ignore[reportUnknownMemberType]
         if len(outgoing) != 1:
             errors.append(
-                f"Statement node '{node.slug}' must have exactly 1 edge (NEXT)."  # pyright: ignore[reportUnknownMemberType]
+                f"Statement '{node.slug}' must have exactly 1 answer (NEXT)."  # pyright: ignore[reportUnknownMemberType]
             )
         if outgoing and Edge.AnswerType.NEXT not in edge_types:
-            errors.append(f"Statement node '{node.slug}' must have a NEXT edge.")  # pyright: ignore[reportUnknownMemberType]
+            errors.append(f"Statement '{node.slug}' must have a NEXT answer.")  # pyright: ignore[reportUnknownMemberType]
     elif node.node_type == Node.NodeType.TERMINAL:  # pyright: ignore[reportUnknownMemberType]
         if len(outgoing) != 0:
-            errors.append(f"Terminal node '{node.slug}' must have no outgoing edges.")  # pyright: ignore[reportUnknownMemberType]
+            errors.append(f"Terminal '{node.slug}' must have no outgoing answers.")  # pyright: ignore[reportUnknownMemberType]
 
     return errors
 
@@ -133,7 +133,7 @@ def validate_questionnaire_graph(questionnaire: Questionnaire) -> list[str]:
     errors: list[str] = []
 
     if questionnaire.start_node is None:  # pyright: ignore[reportUnknownMemberType]
-        errors.append("Questionnaire must have a start node.")
+        errors.append("Questionnaire must have a starting step.")
 
     nodes = questionnaire.nodes.prefetch_related("outgoing_edges").all()  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
     for node in nodes:  # pyright: ignore[reportUnknownVariableType]

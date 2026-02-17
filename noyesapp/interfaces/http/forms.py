@@ -77,6 +77,7 @@ class NodeForm(forms.ModelForm):  # type: ignore[type-arg]
     class Meta:
         model = Node
         fields = ("content", "node_type")
+        labels = {"node_type": "Type"}
         widgets = {
             "content": forms.Textarea(
                 attrs={"class": "form-control", "rows": 3, "autofocus": True}

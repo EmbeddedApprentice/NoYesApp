@@ -3,10 +3,11 @@
 
     {% if is_terminal %}
     <div class="mt-4">
-        <a href="{% url 'complete_questionnaire' questionnaire_slug=questionnaire.slug %}"
-           class="btn btn-primary btn-answer">
-            View Results
-        </a>
+        <form method="post"
+              action="{% url 'complete_questionnaire' questionnaire_slug=questionnaire.slug %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-answer">Done</button>
+        </form>
     </div>
     {% elif node.node_type == "question" %}
     <div class="d-flex gap-3 mt-4">

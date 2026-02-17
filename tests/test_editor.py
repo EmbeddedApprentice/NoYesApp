@@ -389,7 +389,7 @@ class TestAddNodeView:
             )
         )
         assert response.status_code == 200
-        assert b"Add Node" in response.content
+        assert b"Add Step" in response.content
 
     def test_post_creates_node(self, client: Client) -> None:
         data = _build_questionnaire_with_owner()
