@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="alert alert-warning animate-in" role="alert">
+            <h4 class="alert-heading">Oops</h4>
+            <p class="mb-0">{{ message }}</p>
+        </div>
+        <a href="/" class="btn btn-outline-primary animate-in animate-in-delay-1">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

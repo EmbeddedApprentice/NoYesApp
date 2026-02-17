@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}NoYesApp — Directed-Graph Questionnaires{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center animate-in">
+    <h1 class="hero-title">NoYesApp</h1>
+    <p class="hero-subtitle mt-3">
+        Navigate through questions by answering YES or NO,
+        read statements, and reach your conclusion.
+    </p>
+    <div class="mt-4 animate-in animate-in-delay-1">
+        <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-2">Get Started</a>
+        <a href="{% url 'about' %}" class="btn btn-outline-secondary btn-lg">Learn More</a>
+    </div>
+</div>
+
+{% if questionnaires %}
+<hr>
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2 class="mb-4 animate-in animate-in-delay-2">Published Questionnaires</h2>
+        <div class="row">
+            {% for q in questionnaires %}
+            <div class="col-md-6 mb-4 animate-in animate-in-delay-3">
+                <div class="q-card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ q.title }}</h5>
+                        {% if q.description %}
+                        <p class="card-text text-muted">{{ q.description|truncatewords:30 }}</p>
+                        {% endif %}
+                        <p class="card-text">
+                            <small class="text-muted">By {{ q.owner.username }}</small>
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'start_questionnaire' questionnaire_slug=q.slug %}"
+                           class="btn btn-primary">Start</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

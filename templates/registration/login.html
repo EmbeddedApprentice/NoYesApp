@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card animate-in">
+            <div class="card-header text-center">
+                <h2 class="mb-0" style="color: var(--cream);">Login</h2>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
+                </form>
+                <p class="mt-3 text-center mb-0">
+                    Don't have an account? <a href="{% url 'register' %}">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

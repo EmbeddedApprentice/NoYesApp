@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ questionnaire.title }} — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="mb-4">Delete Questionnaire</h2>
+
+        <div class="alert alert-danger" role="alert">
+            <strong>Are you sure?</strong> This will permanently delete
+            <strong>{{ questionnaire.title }}</strong> and all its nodes and edges.
+            This action cannot be undone.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete Permanently</button>
+            <a href="{% url 'edit_questionnaire' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
+               class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

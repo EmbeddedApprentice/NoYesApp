@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Node — {{ questionnaire.title }} — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <h2 class="mb-4">Edit Node: {{ node.slug }}</h2>
+        <p class="text-muted">In: {{ questionnaire.title }}</p>
+
+        {% if is_start_node %}
+        <div class="alert alert-info" role="alert">
+            This is the <strong>start node</strong> of the questionnaire.
+        </div>
+        {% endif %}
+
+        <div class="card mb-4">
+            <div class="card-header">Node Details</div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Outgoing Edges</div>
+            <div class="card-body">
+                {% if outgoing_edges %}
+                <div class="list-group mb-3">
+                    {% for edge in outgoing_edges %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <span class="badge bg-primary">{{ edge.answer_type|upper }}</span>
+                            &rarr; {{ edge.destination.slug }}
+                            <small class="text-muted">({{ edge.destination.node_type }})</small>
+                        </span>
+                        <form method="post"
+                              action="{% url 'delete_edge' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug edge_id=edge.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-3">No outgoing edges.</p>
+                {% endif %}
+
+                <h6>Add Edge</h6>
+                <form method="post"
+                      action="{% url 'add_edge' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
+                      class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <div class="col-auto">
+                        <label for="id_answer_type" class="form-label">Type</label>
+                        {{ edge_form.answer_type }}
+                    </div>
+                    <div class="col">
+                        <label for="id_destination" class="form-label">Destination</label>
+                        {{ edge_form.destination }}
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{% url 'edit_questionnaire' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
+               class="btn btn-outline-secondary">Back to Questionnaire</a>
+            <a href="{% url 'delete_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
+               class="btn btn-outline-danger">Delete Node</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>My Questionnaires</h2>
+            <a href="{% url 'create_questionnaire' user_slug=profile_user.slug %}"
+               class="btn btn-primary">
+                New Questionnaire
+            </a>
+        </div>
+
+        {% if questionnaires %}
+        <div class="list-group">
+            {% for q in questionnaires %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1">{{ q.title }}</h5>
+                    <small class="text-muted">
+                        {{ q.slug }}
+                        {% if q.is_published %}
+                        <span class="badge bg-success ms-2">Published</span>
+                        {% else %}
+                        <span class="badge bg-secondary ms-2">Draft</span>
+                        {% endif %}
+                    </small>
+                </div>
+                <div>
+                    <a href="{% url 'edit_questionnaire' user_slug=profile_user.slug questionnaire_slug=q.slug %}"
+                       class="btn btn-outline-primary btn-sm">Edit</a>
+                    {% if q.is_published %}
+                    <a href="{% url 'start_questionnaire' questionnaire_slug=q.slug %}"
+                       class="btn btn-outline-success btn-sm">Play</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <p class="lead">You haven't created any questionnaires yet.</p>
+            <a href="{% url 'create_questionnaire' user_slug=profile_user.slug %}"
+               class="btn btn-primary">Create your first questionnaire</a>
+        </div>
+        {% endif %}
+
+        <hr class="my-5">
+
+        <h2 class="mb-4">Response History</h2>
+        {% if completed_sessions %}
+        <div class="list-group">
+            {% for session in completed_sessions %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">{{ session.questionnaire.title }}</h5>
+                        <small class="text-muted">
+                            Completed {{ session.completed_at|date:"N j, Y g:i a" }}
+                        </small>
+                    </div>
+                    <a href="{% url 'start_questionnaire' questionnaire_slug=session.questionnaire.slug %}"
+                       class="btn btn-outline-primary btn-sm">Play Again</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">You haven't completed any questionnaires yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

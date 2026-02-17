@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="error-page animate-in">
+    <div class="error-code">500</div>
+    <h2 class="error-title">Something Went Wrong</h2>
+    <p class="mt-3" style="color: var(--warm-brown);">
+        We encountered an unexpected error. Please try again later.
+    </p>
+    <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+</div>
+{% endblock %}

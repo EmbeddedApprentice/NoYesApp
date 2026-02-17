@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Node — {{ questionnaire.title }} — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="mb-4">Delete Node</h2>
+
+        <div class="alert alert-danger" role="alert">
+            <strong>Are you sure?</strong> This will permanently delete the node
+            <strong>{{ node.slug }}</strong> and all its edges.
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <p><strong>Content:</strong> {{ node.content }}</p>
+                <p class="mb-0"><strong>Type:</strong> {{ node.node_type }}</p>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete Node</button>
+            <a href="{% url 'edit_node' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug node_slug=node.slug %}"
+               class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
