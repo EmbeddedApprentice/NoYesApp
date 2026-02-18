@@ -68,6 +68,18 @@ uv sync                               # Install dependencies
 - Branch naming: `{initials}/{description}`
 - Test with Factory Boy and pytest fixtures; TDD approach
 
+## Testing
+
+Always run the full test suite (`uv run pytest`) after making changes and confirm all tests pass before committing.
+
+## Database
+
+Use Unix socket peer auth for local PostgreSQL connections (no password/TCP). Production database config must use `dj_database_url.config()` consistently — never mix manual env var parsing with `dj_database_url` imports.
+
+## Git Workflow
+
+Before using the `gh` CLI for commits or PRs, verify `gh auth status`. If not authenticated, prompt the user before proceeding.
+
 ## HTMX Patterns
 
 - Views detect `HX-Request` header to return partials vs full pages
