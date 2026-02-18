@@ -248,14 +248,14 @@ def answer_node_view(
             "play_node", questionnaire_slug=questionnaire_slug, node_slug=node_slug
         )
 
-    questionnaire = get_questionnaire_by_slug(questionnaire_slug)
+    node = get_node_by_slugs(questionnaire_slug, node_slug)
+    questionnaire = node.questionnaire  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
-    denied = _check_questionnaire_access(request, questionnaire)
+    denied = _check_questionnaire_access(request, questionnaire)  # pyright: ignore[reportUnknownArgumentType]
     if denied is not None:
         return denied
 
     answer_type = request.POST.get("answer_type", "")
-    node = get_node_by_slugs(questionnaire_slug, node_slug)
     destination = get_destination_for_answer(node, answer_type)
 
     # Get or create session
@@ -266,7 +266,7 @@ def answer_node_view(
         session_key = request.session.session_key or ""
 
     session = get_or_create_active_session(
-        questionnaire,
+        questionnaire,  # pyright: ignore[reportUnknownArgumentType]
         user=user,  # pyright: ignore[reportArgumentType]
         session_key=session_key,
     )

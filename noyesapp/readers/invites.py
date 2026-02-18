@@ -18,7 +18,7 @@ def get_invite_by_pk(
 ) -> QuestionnaireInvite:
     """Get an invite by PK, verifying it belongs to the given questionnaire."""
     return get_object_or_404(
-        QuestionnaireInvite,
+        QuestionnaireInvite.objects.select_related("invited_user"),
         pk=invite_pk,
         questionnaire=questionnaire,
     )
