@@ -69,7 +69,11 @@ def get_node_by_slugs(questionnaire_slug: str, node_slug: str) -> Node:
 
 def get_node_with_edges(node: Node) -> Node:
     """Return a node with outgoing edges and their destinations prefetched."""
-    return Node.objects.prefetch_related("outgoing_edges__destination").get(pk=node.pk)
+    return (
+        Node.objects.select_related("questionnaire")
+        .prefetch_related("outgoing_edges__destination")
+        .get(pk=node.pk)
+    )
 
 
 def get_questionnaire_nodes(questionnaire: Questionnaire) -> QuerySet[Node]:
