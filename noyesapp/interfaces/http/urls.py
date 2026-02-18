@@ -33,9 +33,24 @@ urlpatterns = [
         name="delete_questionnaire",
     ),
     path(
-        "<slug:user_slug>/<slug:questionnaire_slug>/publish/",
-        views.publish_questionnaire_view,
-        name="publish_questionnaire",
+        "<slug:user_slug>/<slug:questionnaire_slug>/access/",
+        views.set_access_type_view,
+        name="set_access_type",
+    ),
+    path(
+        "<slug:user_slug>/<slug:questionnaire_slug>/invites/",
+        views.manage_invites_view,
+        name="manage_invites",
+    ),
+    path(
+        "<slug:user_slug>/<slug:questionnaire_slug>/invites/add/",
+        views.add_invite_view,
+        name="add_invite",
+    ),
+    path(
+        "<slug:user_slug>/<slug:questionnaire_slug>/invites/<int:invite_id>/revoke/",
+        views.revoke_invite_view,
+        name="revoke_invite",
     ),
     path(
         "<slug:user_slug>/<slug:questionnaire_slug>/nodes/add/",

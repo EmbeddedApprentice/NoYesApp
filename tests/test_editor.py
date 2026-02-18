@@ -5,13 +5,13 @@ from django.test import Client
 from django.urls import reverse
 
 from noyesapp.actions.questionnaires import (
+    activate_questionnaire,
     create_edge,
     create_node,
     create_questionnaire,
     delete_edge,
     delete_node,
     delete_questionnaire,
-    publish_questionnaire,
     set_start_node,
     update_node,
     update_questionnaire,
@@ -308,8 +308,8 @@ class TestDeleteQuestionnaireView:
         assert response.status_code == 403
 
 
-class TestPublishQuestionnaireView:
-    def test_publish_valid_questionnaire(self, client: Client) -> None:
+class TestSetAccessTypeView:
+    def test_activate_valid_questionnaire(self, client: Client) -> None:
         owner = UserFactory()
         q = create_questionnaire("Pub Quiz", owner, slug="pub-quiz")
         question = create_node(q, "Yes?", Node.NodeType.QUESTION)
@@ -322,54 +322,57 @@ class TestPublishQuestionnaireView:
 
         client.post(
             reverse(
-                "publish_questionnaire",
+                "set_access_type",
                 kwargs={
                     "user_slug": owner.slug,
                     "questionnaire_slug": "pub-quiz",
                 },
-            )
+            ),
+            {"access_type": "public"},
         )
         q.refresh_from_db()
-        assert q.is_published is True
+        assert q.access_type == Questionnaire.AccessType.PUBLIC
 
-    def test_unpublish(self, client: Client) -> None:
+    def test_deactivate(self, client: Client) -> None:
         owner = UserFactory()
-        q = create_questionnaire("Unpub", owner, slug="unpub")
+        q = create_questionnaire("Deact", owner, slug="deact")
         question = create_node(q, "Yes?", Node.NodeType.QUESTION)
         yes_end = create_node(q, "Yes end", Node.NodeType.TERMINAL)
         no_end = create_node(q, "No end", Node.NodeType.TERMINAL)
         create_edge(question, yes_end, Edge.AnswerType.YES)
         create_edge(question, no_end, Edge.AnswerType.NO)
         set_start_node(q, question)
-        publish_questionnaire(q)
+        activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
         _login(client, owner)
 
         client.post(
             reverse(
-                "publish_questionnaire",
+                "set_access_type",
                 kwargs={
                     "user_slug": owner.slug,
-                    "questionnaire_slug": "unpub",
+                    "questionnaire_slug": "deact",
                 },
-            )
+            ),
+            {"access_type": "draft"},
         )
         q.refresh_from_db()
-        assert q.is_published is False
+        assert q.access_type == Questionnaire.AccessType.DRAFT
 
-    def test_publish_invalid_shows_error(self, client: Client) -> None:
+    def test_activate_invalid_shows_error(self, client: Client) -> None:
         data = _build_questionnaire_with_owner()
         _login(client, data["owner"])
         response = client.post(
             reverse(
-                "publish_questionnaire",
+                "set_access_type",
                 kwargs={
                     "user_slug": data["owner"].slug,
                     "questionnaire_slug": data["questionnaire"].slug,
                 },
-            )
+            ),
+            {"access_type": "public"},
         )
         assert response.status_code == 200
-        assert b"Cannot publish" in response.content
+        assert b"Cannot activate" in response.content
 
 
 # --- Node Editor View Tests ---

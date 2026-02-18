@@ -1,7 +1,7 @@
 from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 
-from noyesapp.data.models import Edge, Node, Questionnaire
+from noyesapp.data.models import Edge, Node, Questionnaire, QuestionnaireInvite
 from noyesapp.data.models.user import User
 
 
@@ -13,9 +13,44 @@ def get_questionnaire_by_slug(slug: str) -> Questionnaire:
     )
 
 
-def get_published_questionnaires() -> QuerySet[Questionnaire]:
-    """Return all published questionnaires."""
-    return Questionnaire.objects.filter(is_published=True).select_related("owner")
+def get_public_questionnaires() -> QuerySet[Questionnaire]:
+    """Return all public questionnaires."""
+    return Questionnaire.objects.filter(
+        access_type=Questionnaire.AccessType.PUBLIC,
+    ).select_related("owner")
+
+
+def can_user_play_questionnaire(
+    questionnaire: Questionnaire, user: User | None
+) -> bool:
+    """Check if a user can play a questionnaire based on its access type.
+
+    Owner always has access. Anonymous users represented as None.
+    """
+    access_type: str = questionnaire.access_type  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    owner_pk: int = questionnaire.owner_id  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+
+    if user is not None and user.pk == owner_pk:
+        return True
+
+    if access_type == Questionnaire.AccessType.DRAFT:
+        return False
+
+    if access_type == Questionnaire.AccessType.PUBLIC:
+        return True
+
+    if access_type == Questionnaire.AccessType.PRIVATE:
+        return False
+
+    if access_type == Questionnaire.AccessType.INVITE_ONLY:
+        if user is None:
+            return False
+        return QuestionnaireInvite.objects.filter(
+            questionnaire=questionnaire,
+            invited_user=user,
+        ).exists()
+
+    return False
 
 
 def get_user_questionnaires(owner: User) -> QuerySet[Questionnaire]:

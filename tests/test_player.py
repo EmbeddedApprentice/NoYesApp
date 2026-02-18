@@ -5,10 +5,10 @@ from django.test import Client
 from django.urls import reverse
 
 from noyesapp.actions.questionnaires import (
+    activate_questionnaire,
     create_edge,
     create_node,
     create_questionnaire,
-    publish_questionnaire,
     set_start_node,
 )
 from noyesapp.actions.sessions import (
@@ -18,7 +18,13 @@ from noyesapp.actions.sessions import (
     record_node_visit,
     start_session,
 )
-from noyesapp.data.models import Edge, Node, NodeResponse, QuestionnaireSession
+from noyesapp.data.models import (
+    Edge,
+    Node,
+    NodeResponse,
+    Questionnaire,
+    QuestionnaireSession,
+)
 from noyesapp.readers.sessions import (
     get_session_current_node_response,
     get_session_responses,
@@ -49,7 +55,7 @@ def _build_published_questionnaire(
     create_edge(question, yes_end, Edge.AnswerType.YES)
     create_edge(question, no_end, Edge.AnswerType.NO)
     set_start_node(q, question)
-    publish_questionnaire(q)
+    activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
     return {
         "questionnaire": q,
         "question": question,
@@ -76,7 +82,7 @@ def _build_multi_step_questionnaire(
     create_edge(question, yes_end, Edge.AnswerType.YES)
     create_edge(question, no_end, Edge.AnswerType.NO)
     set_start_node(q, statement)
-    publish_questionnaire(q)
+    activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
     return {
         "questionnaire": q,
         "statement": statement,
@@ -304,7 +310,9 @@ class TestStartQuestionnaireView:
         assert response.status_code == 404
 
     def test_error_for_no_start_node(self, client: Client) -> None:
-        QuestionnaireFactory(slug="no-start", is_published=True)
+        QuestionnaireFactory(
+            slug="no-start", access_type=Questionnaire.AccessType.PUBLIC
+        )
         response = client.get(
             reverse("start_questionnaire", kwargs={"questionnaire_slug": "no-start"})
         )

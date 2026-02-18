@@ -21,17 +21,21 @@
                     <h5 class="mb-1">{{ q.title }}</h5>
                     <small class="text-muted">
                         {{ q.slug }}
-                        {% if q.is_published %}
-                        <span class="badge bg-success ms-2">Published</span>
-                        {% else %}
+                        {% if q.access_type == "draft" %}
                         <span class="badge bg-secondary ms-2">Draft</span>
+                        {% elif q.access_type == "public" %}
+                        <span class="badge bg-success ms-2">Public</span>
+                        {% elif q.access_type == "private" %}
+                        <span class="badge bg-warning text-dark ms-2">Private</span>
+                        {% elif q.access_type == "invite_only" %}
+                        <span class="badge bg-info ms-2">Invite Only</span>
                         {% endif %}
                     </small>
                 </div>
                 <div>
                     <a href="{% url 'edit_questionnaire' user_slug=profile_user.slug questionnaire_slug=q.slug %}"
                        class="btn btn-outline-primary btn-sm">Edit</a>
-                    {% if q.is_published %}
+                    {% if q.access_type != "draft" %}
                     <a href="{% url 'start_questionnaire' questionnaire_slug=q.slug %}"
                        class="btn btn-outline-success btn-sm">Play</a>
                     {% endif %}

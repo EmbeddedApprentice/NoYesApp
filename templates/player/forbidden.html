@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied — {{ questionnaire.title }} — NoYesApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <div class="animate-in">
+            <h2 class="mb-3">Access Denied</h2>
+            <p class="lead" style="color: var(--warm-brown);">
+                You do not have permission to play <strong>{{ questionnaire.title }}</strong>.
+            </p>
+            {% if questionnaire.access_type == "invite_only" %}
+            <p class="text-muted">This questionnaire is invite-only. Contact the owner to request access.</p>
+            {% elif questionnaire.access_type == "private" %}
+            <p class="text-muted">This questionnaire is private.</p>
+            {% elif questionnaire.access_type == "draft" %}
+            <p class="text-muted">This questionnaire is still being drafted.</p>
+            {% endif %}
+        </div>
+        <a href="/" class="btn btn-primary mt-2">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 from noyesapp.data.models.edge import Edge
+from noyesapp.data.models.invite import QuestionnaireInvite
 from noyesapp.data.models.node import Node
 from noyesapp.data.models.profile import Profile
 from noyesapp.data.models.questionnaire import Questionnaire
@@ -12,6 +13,7 @@ __all__ = [
     "NodeResponse",
     "Profile",
     "Questionnaire",
+    "QuestionnaireInvite",
     "QuestionnaireSession",
     "User",
 ]

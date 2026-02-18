@@ -86,6 +86,14 @@ class NodeForm(forms.ModelForm):  # type: ignore[type-arg]
         }
 
 
+class InviteForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "placeholder": "user@example.com"}
+        ),
+    )
+
+
 class EdgeForm(forms.Form):
     answer_type = forms.ChoiceField(
         choices=Edge.AnswerType.choices,

@@ -142,20 +142,36 @@ def validate_questionnaire_graph(questionnaire: Questionnaire) -> list[str]:
     return errors
 
 
-def publish_questionnaire(questionnaire: Questionnaire) -> Questionnaire:
-    """Publish a questionnaire after validating its graph."""
+def activate_questionnaire(
+    questionnaire: Questionnaire, access_type: str
+) -> Questionnaire:
+    """Activate a questionnaire with the given access type after validating its graph.
+
+    Valid access_type values: PUBLIC, PRIVATE, INVITE_ONLY (not DRAFT).
+    """
+    if access_type == Questionnaire.AccessType.DRAFT:  # pyright: ignore[reportUnnecessaryComparison]
+        raise ValueError("Use deactivate_questionnaire to set DRAFT status.")
+    valid_types = {
+        Questionnaire.AccessType.PUBLIC,
+        Questionnaire.AccessType.PRIVATE,
+        Questionnaire.AccessType.INVITE_ONLY,
+    }
+    if access_type not in valid_types:
+        raise ValueError(
+            f"Invalid access_type '{access_type}'. Must be one of: {valid_types}"
+        )
     errors = validate_questionnaire_graph(questionnaire)
     if errors:
-        raise ValueError(f"Cannot publish questionnaire: {'; '.join(errors)}")
-    questionnaire.is_published = True  # pyright: ignore[reportAttributeAccessIssue]
-    questionnaire.save(update_fields=["is_published", "updated_at"])
+        raise ValueError(f"Cannot activate questionnaire: {'; '.join(errors)}")
+    questionnaire.access_type = access_type  # pyright: ignore[reportAttributeAccessIssue]
+    questionnaire.save(update_fields=["access_type", "updated_at"])
     return questionnaire
 
 
-def unpublish_questionnaire(questionnaire: Questionnaire) -> Questionnaire:
-    """Unpublish a questionnaire."""
-    questionnaire.is_published = False  # pyright: ignore[reportAttributeAccessIssue]
-    questionnaire.save(update_fields=["is_published", "updated_at"])
+def deactivate_questionnaire(questionnaire: Questionnaire) -> Questionnaire:
+    """Set questionnaire back to DRAFT status."""
+    questionnaire.access_type = Questionnaire.AccessType.DRAFT  # pyright: ignore[reportAttributeAccessIssue]
+    questionnaire.save(update_fields=["access_type", "updated_at"])
     return questionnaire
 
 

@@ -3,14 +3,14 @@ import pytest
 from django.http import Http404
 
 from noyesapp.actions.questionnaires import (
+    activate_questionnaire,
     create_edge,
     create_node,
     create_questionnaire,
+    deactivate_questionnaire,
     generate_unique_node_slug,
     generate_unique_questionnaire_slug,
-    publish_questionnaire,
     set_start_node,
-    unpublish_questionnaire,
     validate_node_edges,
     validate_questionnaire_graph,
 )
@@ -19,7 +19,7 @@ from noyesapp.readers.questionnaires import (
     get_destination_for_answer,
     get_node_by_slugs,
     get_outgoing_edges,
-    get_published_questionnaires,
+    get_public_questionnaires,
     get_questionnaire_by_slug,
     get_user_questionnaires,
 )
@@ -41,7 +41,7 @@ class TestQuestionnaireModel:
         q = QuestionnaireFactory(title="My Quiz", slug="my-quiz")
         assert q.title == "My Quiz"
         assert q.slug == "my-quiz"
-        assert q.is_published is False
+        assert q.access_type == Questionnaire.AccessType.DRAFT
         assert q.start_node is None
 
     def test_str(self) -> None:
@@ -324,8 +324,8 @@ class TestValidation:
         assert any("no outgoing answers" in e for e in errors)
 
 
-class TestPublish:
-    def test_publish_valid_questionnaire(self) -> None:
+class TestActivateDeactivate:
+    def test_activate_valid_questionnaire_public(self) -> None:
         owner = UserFactory()
         q = create_questionnaire("Pub Quiz", owner)
         question = create_node(q, "Yes?", Node.NodeType.QUESTION)
@@ -335,29 +335,34 @@ class TestPublish:
         create_edge(question, no_end, Edge.AnswerType.NO)
         set_start_node(q, question)
 
-        publish_questionnaire(q)
+        activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
         q.refresh_from_db()
-        assert q.is_published is True
+        assert q.access_type == Questionnaire.AccessType.PUBLIC
 
-    def test_publish_invalid_questionnaire(self) -> None:
+    def test_activate_invalid_questionnaire(self) -> None:
         q = QuestionnaireFactory()
-        with pytest.raises(ValueError, match="Cannot publish"):
-            publish_questionnaire(q)
+        with pytest.raises(ValueError, match="Cannot activate"):
+            activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
 
-    def test_unpublish(self) -> None:
+    def test_activate_with_draft_raises(self) -> None:
+        q = QuestionnaireFactory()
+        with pytest.raises(ValueError, match="deactivate_questionnaire"):
+            activate_questionnaire(q, Questionnaire.AccessType.DRAFT)
+
+    def test_deactivate(self) -> None:
         owner = UserFactory()
-        q = create_questionnaire("Unpub Quiz", owner)
+        q = create_questionnaire("Deact Quiz", owner)
         question = create_node(q, "Yes?", Node.NodeType.QUESTION)
         yes_end = create_node(q, "Yes end", Node.NodeType.TERMINAL)
         no_end = create_node(q, "No end", Node.NodeType.TERMINAL)
         create_edge(question, yes_end, Edge.AnswerType.YES)
         create_edge(question, no_end, Edge.AnswerType.NO)
         set_start_node(q, question)
-        publish_questionnaire(q)
+        activate_questionnaire(q, Questionnaire.AccessType.PUBLIC)
 
-        unpublish_questionnaire(q)
+        deactivate_questionnaire(q)
         q.refresh_from_db()
-        assert q.is_published is False
+        assert q.access_type == Questionnaire.AccessType.DRAFT
 
 
 # --- Reader tests ---
@@ -374,13 +379,13 @@ class TestGetQuestionnaireBySlug:
             get_questionnaire_by_slug("nonexistent")
 
 
-class TestGetPublishedQuestionnaires:
-    def test_only_published(self) -> None:
-        QuestionnaireFactory(is_published=True)
-        QuestionnaireFactory(is_published=False)
-        qs = get_published_questionnaires()
+class TestGetPublicQuestionnaires:
+    def test_only_public(self) -> None:
+        QuestionnaireFactory(access_type=Questionnaire.AccessType.PUBLIC)
+        QuestionnaireFactory(access_type=Questionnaire.AccessType.DRAFT)
+        qs = get_public_questionnaires()
         assert qs.count() == 1
-        assert all(q.is_published for q in qs)
+        assert all(q.access_type == Questionnaire.AccessType.PUBLIC for q in qs)
 
 
 class TestGetUserQuestionnaires:

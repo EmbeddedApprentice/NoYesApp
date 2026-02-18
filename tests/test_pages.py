@@ -3,6 +3,7 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
+from noyesapp.data.models import Questionnaire
 from tests.factories import (
     QuestionnaireFactory,
     QuestionnaireSessionFactory,
@@ -24,17 +25,17 @@ class TestLandingPage:
         assert response.status_code == 302
         assert response.url == reverse("dashboard", kwargs={"user_slug": user.slug})
 
-    def test_landing_page_shows_published_questionnaires(self, client: Client) -> None:
-        q = QuestionnaireFactory(is_published=True)
-        QuestionnaireFactory(is_published=False)  # draft, should not appear
+    def test_landing_page_shows_public_questionnaires(self, client: Client) -> None:
+        q = QuestionnaireFactory(access_type=Questionnaire.AccessType.PUBLIC)
+        QuestionnaireFactory(
+            access_type=Questionnaire.AccessType.DRAFT
+        )  # draft, should not appear
         response = client.get("/")
         assert response.status_code == 200
         assert q.title.encode() in response.content
 
-    def test_landing_page_hides_unpublished_questionnaires(
-        self, client: Client
-    ) -> None:
-        draft = QuestionnaireFactory(is_published=False)
+    def test_landing_page_hides_non_public_questionnaires(self, client: Client) -> None:
+        draft = QuestionnaireFactory(access_type=Questionnaire.AccessType.DRAFT)
         response = client.get("/")
         assert response.status_code == 200
         assert draft.title.encode() not in response.content
@@ -84,7 +85,9 @@ class TestNavbar:
 class TestDashboardResponseHistory:
     def test_dashboard_shows_completed_sessions(self, client: Client) -> None:
         user = UserFactory()
-        q = QuestionnaireFactory(owner=user, is_published=True)
+        q = QuestionnaireFactory(
+            owner=user, access_type=Questionnaire.AccessType.PUBLIC
+        )
         QuestionnaireSessionFactory(questionnaire=q, user=user, is_complete=True)
         client.force_login(user)
         response = client.get(reverse("dashboard", kwargs={"user_slug": user.slug}))

@@ -1,20 +1,21 @@
 import contextlib
 
-from django.contrib.auth import login, logout
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from noyesapp.actions.invites import create_invite, revoke_invite
 from noyesapp.actions.questionnaires import (
+    activate_questionnaire,
     create_edge,
     create_node,
     create_questionnaire,
+    deactivate_questionnaire,
     delete_edge,
     delete_node,
     delete_questionnaire,
-    publish_questionnaire,
     set_start_node,
-    unpublish_questionnaire,
     update_node,
     update_questionnaire,
     validate_questionnaire_graph,
@@ -25,21 +26,24 @@ from noyesapp.actions.sessions import (
     record_answer_and_advance,
 )
 from noyesapp.actions.users import create_user
-from noyesapp.data.models import Node
+from noyesapp.data.models import Node, Questionnaire
 from noyesapp.interfaces.http.forms import (
     EdgeForm,
     EmailAuthenticationForm,
+    InviteForm,
     NodeForm,
     QuestionnaireForm,
     RegistrationForm,
 )
+from noyesapp.readers.invites import get_invite_by_pk, get_questionnaire_invites
 from noyesapp.readers.questionnaires import (
+    can_user_play_questionnaire,
     get_destination_for_answer,
     get_edge_for_node,
     get_node_by_slugs,
     get_node_for_questionnaire,
     get_node_with_edges,
-    get_published_questionnaires,
+    get_public_questionnaires,
     get_questionnaire_by_slug,
     get_questionnaire_for_owner,
     get_questionnaire_nodes,
@@ -48,6 +52,8 @@ from noyesapp.readers.questionnaires import (
 from noyesapp.readers.sessions import get_session_responses, get_user_completed_sessions
 from noyesapp.readers.users import get_user_by_slug
 
+User = get_user_model()
+
 
 def home_view(request: HttpRequest) -> HttpResponse:
     """Landing page. Authenticated users are redirected to their dashboard."""
@@ -55,7 +61,7 @@ def home_view(request: HttpRequest) -> HttpResponse:
         user_slug: str = request.user.slug  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
         return redirect("dashboard", user_slug=user_slug)
 
-    questionnaires = get_published_questionnaires()
+    questionnaires = get_public_questionnaires()
     return render(
         request,
         "flatpages/landing.html",
@@ -110,11 +116,39 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 # --- Questionnaire Player ---
 
 
+def _check_questionnaire_access(
+    request: HttpRequest, questionnaire: Questionnaire
+) -> HttpResponse | None:
+    """Check if the current user can play a questionnaire.
+
+    Returns None if access is allowed, or an HttpResponse (403/redirect) if denied.
+    """
+    user = request.user if request.user.is_authenticated else None
+    if can_user_play_questionnaire(questionnaire, user):  # pyright: ignore[reportArgumentType]
+        return None
+
+    access_type: str = questionnaire.access_type  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+
+    if access_type == Questionnaire.AccessType.INVITE_ONLY and user is None:
+        return redirect(f"/login/?next={request.path}")
+
+    return render(
+        request,
+        "player/forbidden.html",
+        {"questionnaire": questionnaire},
+        status=403,
+    )
+
+
 def start_questionnaire_view(
     request: HttpRequest, questionnaire_slug: str
 ) -> HttpResponse:
     """Start or resume a questionnaire. Redirects to the start node."""
     questionnaire = get_questionnaire_by_slug(questionnaire_slug)
+
+    denied = _check_questionnaire_access(request, questionnaire)
+    if denied is not None:
+        return denied
 
     if questionnaire.start_node is None:  # pyright: ignore[reportUnknownMemberType]
         return render(
@@ -155,6 +189,10 @@ def play_node_view(
     node = get_node_with_edges(node)
     questionnaire = node.questionnaire  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
+    denied = _check_questionnaire_access(request, questionnaire)  # pyright: ignore[reportUnknownArgumentType]
+    if denied is not None:
+        return denied
+
     # Get edges for template context
     outgoing_edges: list[object] = list(node.outgoing_edges.all())  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
 
@@ -182,6 +220,10 @@ def node_partial_view(
     node = get_node_with_edges(node)
     questionnaire = node.questionnaire  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
+    denied = _check_questionnaire_access(request, questionnaire)  # pyright: ignore[reportUnknownArgumentType]
+    if denied is not None:
+        return denied
+
     outgoing_edges: list[object] = list(node.outgoing_edges.all())  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownArgumentType]
     is_terminal: bool = node.node_type == Node.NodeType.TERMINAL  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
@@ -206,10 +248,15 @@ def answer_node_view(
             "play_node", questionnaire_slug=questionnaire_slug, node_slug=node_slug
         )
 
+    questionnaire = get_questionnaire_by_slug(questionnaire_slug)
+
+    denied = _check_questionnaire_access(request, questionnaire)
+    if denied is not None:
+        return denied
+
     answer_type = request.POST.get("answer_type", "")
     node = get_node_by_slugs(questionnaire_slug, node_slug)
     destination = get_destination_for_answer(node, answer_type)
-    questionnaire = get_questionnaire_by_slug(questionnaire_slug)
 
     # Get or create session
     user = request.user if request.user.is_authenticated else None
@@ -239,6 +286,10 @@ def complete_questionnaire_view(
 ) -> HttpResponse:
     """Complete and show the completion page for a questionnaire."""
     questionnaire = get_questionnaire_by_slug(questionnaire_slug)
+
+    denied = _check_questionnaire_access(request, questionnaire)
+    if denied is not None:
+        return denied
 
     user = request.user if request.user.is_authenticated else None
     session_key = request.session.session_key or ""
@@ -417,10 +468,10 @@ def delete_questionnaire_view(
 
 
 @login_required
-def publish_questionnaire_view(
+def set_access_type_view(
     request: HttpRequest, user_slug: str, questionnaire_slug: str
 ) -> HttpResponse:
-    """Toggle publish/unpublish for a questionnaire."""
+    """Set the access type for a questionnaire."""
     profile_user = get_user_by_slug(user_slug)
     if profile_user.pk != request.user.pk:
         return render(request, "editor/forbidden.html", status=403)
@@ -428,11 +479,12 @@ def publish_questionnaire_view(
     questionnaire = get_questionnaire_for_owner(questionnaire_slug, profile_user)
 
     if request.method == "POST":
-        if questionnaire.is_published:  # pyright: ignore[reportUnknownMemberType]
-            unpublish_questionnaire(questionnaire)
+        new_access_type = request.POST.get("access_type", "")
+        if new_access_type == Questionnaire.AccessType.DRAFT:  # pyright: ignore[reportUnnecessaryComparison]
+            deactivate_questionnaire(questionnaire)
         else:
             try:
-                publish_questionnaire(questionnaire)
+                activate_questionnaire(questionnaire, new_access_type)
             except ValueError as e:
                 nodes = get_questionnaire_nodes(questionnaire)
                 validation_errors = validate_questionnaire_graph(questionnaire)
@@ -451,7 +503,7 @@ def publish_questionnaire_view(
                         "form": form,
                         "profile_user": profile_user,
                         "validation_errors": validation_errors,
-                        "publish_error": str(e),
+                        "access_error": str(e),
                     },
                 )
 
@@ -679,4 +731,100 @@ def delete_edge_view(
         user_slug=user_slug,
         questionnaire_slug=questionnaire_slug,
         node_slug=node_slug,
+    )
+
+
+# --- Invite Management ---
+
+
+@login_required
+def manage_invites_view(
+    request: HttpRequest, user_slug: str, questionnaire_slug: str
+) -> HttpResponse:
+    """List invites and show add-invite form."""
+    profile_user = get_user_by_slug(user_slug)
+    if profile_user.pk != request.user.pk:
+        return render(request, "editor/forbidden.html", status=403)
+
+    questionnaire = get_questionnaire_for_owner(questionnaire_slug, profile_user)
+    invites = get_questionnaire_invites(questionnaire)
+    form = InviteForm()
+
+    return render(
+        request,
+        "editor/manage_invites.html",
+        {
+            "questionnaire": questionnaire,
+            "invites": invites,
+            "form": form,
+            "profile_user": profile_user,
+        },
+    )
+
+
+@login_required
+def add_invite_view(
+    request: HttpRequest, user_slug: str, questionnaire_slug: str
+) -> HttpResponse:
+    """Add an invite by looking up user email."""
+    profile_user = get_user_by_slug(user_slug)
+    if profile_user.pk != request.user.pk:
+        return render(request, "editor/forbidden.html", status=403)
+
+    questionnaire = get_questionnaire_for_owner(questionnaire_slug, profile_user)
+
+    if request.method == "POST":
+        form = InviteForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            invited_user = User.objects.filter(email=email).first()
+            if invited_user is None:
+                form.add_error("email", "No user found with that email address.")
+            elif invited_user.pk == profile_user.pk:
+                form.add_error("email", "You cannot invite yourself.")
+            else:
+                create_invite(questionnaire, invited_user)  # pyright: ignore[reportArgumentType]
+                return redirect(
+                    "manage_invites",
+                    user_slug=user_slug,
+                    questionnaire_slug=questionnaire_slug,
+                )
+    else:
+        form = InviteForm()
+
+    invites = get_questionnaire_invites(questionnaire)
+    return render(
+        request,
+        "editor/manage_invites.html",
+        {
+            "questionnaire": questionnaire,
+            "invites": invites,
+            "form": form,
+            "profile_user": profile_user,
+        },
+    )
+
+
+@login_required
+def revoke_invite_view(
+    request: HttpRequest,
+    user_slug: str,
+    questionnaire_slug: str,
+    invite_id: int,
+) -> HttpResponse:
+    """Revoke (delete) an invite."""
+    profile_user = get_user_by_slug(user_slug)
+    if profile_user.pk != request.user.pk:
+        return render(request, "editor/forbidden.html", status=403)
+
+    questionnaire = get_questionnaire_for_owner(questionnaire_slug, profile_user)
+    invite = get_invite_by_pk(questionnaire, invite_id)
+
+    if request.method == "POST":
+        revoke_invite(invite)
+
+    return redirect(
+        "manage_invites",
+        user_slug=user_slug,
+        questionnaire_slug=questionnaire_slug,
     )

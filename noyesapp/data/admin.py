@@ -7,6 +7,7 @@ from noyesapp.data.models import (
     NodeResponse,
     Profile,
     Questionnaire,
+    QuestionnaireInvite,
     QuestionnaireSession,
     User,
 )
@@ -32,6 +33,14 @@ class ProfileAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
     raw_id_fields = ("user",)
 
 
+class QuestionnaireInviteInline(admin.TabularInline):  # type: ignore[type-arg]
+    model = QuestionnaireInvite
+    fields = ("invited_user", "created_at")
+    readonly_fields = ("created_at",)
+    extra = 0
+    raw_id_fields = ("invited_user",)
+
+
 class NodeInline(admin.TabularInline):  # type: ignore[type-arg]
     model = Node
     fields = ("slug", "content", "node_type")
@@ -47,12 +56,19 @@ class EdgeInline(admin.TabularInline):  # type: ignore[type-arg]
 
 @admin.register(Questionnaire)
 class QuestionnaireAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
-    list_display = ("title", "slug", "owner", "is_published", "created_at")
-    list_filter = ("is_published",)
+    list_display = ("title", "slug", "owner", "access_type", "created_at")
+    list_filter = ("access_type",)
     search_fields = ("title", "slug")
     prepopulated_fields = {"slug": ("title",)}
     raw_id_fields = ("owner", "start_node")
-    inlines = [NodeInline]  # pyright: ignore[reportUnknownVariableType]
+    inlines = [NodeInline, QuestionnaireInviteInline]  # pyright: ignore[reportUnknownVariableType]
+
+
+@admin.register(QuestionnaireInvite)
+class QuestionnaireInviteAdmin(admin.ModelAdmin):  # type: ignore[type-arg]
+    list_display = ("questionnaire", "invited_user", "created_at")
+    list_select_related = ("questionnaire", "invited_user")
+    raw_id_fields = ("questionnaire", "invited_user")
 
 
 @admin.register(Node)

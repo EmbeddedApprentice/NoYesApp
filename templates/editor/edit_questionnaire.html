@@ -8,25 +8,31 @@
     <div class="col-md-10">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Edit: {{ questionnaire.title }}</h2>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <form method="post"
-                      action="{% url 'publish_questionnaire' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
-                      class="d-inline">
+                      action="{% url 'set_access_type' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
+                      class="d-inline d-flex align-items-center gap-2">
                     {% csrf_token %}
-                    {% if questionnaire.is_published %}
-                    <button type="submit" class="btn btn-warning">Unpublish</button>
-                    {% else %}
-                    <button type="submit" class="btn btn-success">Publish</button>
-                    {% endif %}
+                    <select name="access_type" class="form-select form-select-sm" style="width: auto;">
+                        <option value="draft" {% if questionnaire.access_type == "draft" %}selected{% endif %}>Draft</option>
+                        <option value="public" {% if questionnaire.access_type == "public" %}selected{% endif %}>Public</option>
+                        <option value="private" {% if questionnaire.access_type == "private" %}selected{% endif %}>Private</option>
+                        <option value="invite_only" {% if questionnaire.access_type == "invite_only" %}selected{% endif %}>Invite Only</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-primary">Set Access</button>
                 </form>
+                {% if questionnaire.access_type == "invite_only" %}
+                <a href="{% url 'manage_invites' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
+                   class="btn btn-sm btn-outline-primary">Manage Invites</a>
+                {% endif %}
                 <a href="{% url 'delete_questionnaire' user_slug=profile_user.slug questionnaire_slug=questionnaire.slug %}"
-                   class="btn btn-outline-danger">Delete</a>
+                   class="btn btn-sm btn-outline-danger">Delete</a>
             </div>
         </div>
 
-        {% if publish_error %}
+        {% if access_error %}
         <div class="alert alert-danger" role="alert">
-            {{ publish_error }}
+            {{ access_error }}
         </div>
         {% endif %}
 

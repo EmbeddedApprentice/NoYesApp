@@ -11,6 +11,7 @@ from noyesapp.data.models import (
     NodeResponse,
     Profile,
     Questionnaire,
+    QuestionnaireInvite,
     QuestionnaireSession,
 )
 
@@ -78,3 +79,11 @@ class NodeResponseFactory(factory.django.DjangoModelFactory):  # type: ignore[mi
     node = factory.SubFactory(NodeFactory)
     order = factory.Sequence(lambda n: n + 1)
     answer_given = ""
+
+
+class QuestionnaireInviteFactory(factory.django.DjangoModelFactory):  # type: ignore[misc]
+    class Meta:
+        model = QuestionnaireInvite
+
+    questionnaire = factory.SubFactory(QuestionnaireFactory)
+    invited_user = factory.SubFactory(UserFactory)
